@@ -2,8 +2,8 @@ const puppeteer = require('puppeteer')
 require('dotenv').config()
 
 const CREDS = {
-    username: process.env.USERNAME,
-    password: process.env.PASSWORD
+    username: process.env.PG_USERNAME,
+    password: process.env.PG_PASSWORD
 }
 
 async function main() {
