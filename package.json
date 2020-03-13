@@ -4,13 +4,14 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "start": "node index.js"
+        "start": "nodemon index.js"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
         "dotenv": "8.2.0",
+        "nodemon": "^2.0.2",
         "puppeteer": "2.1.1"
     }
 }

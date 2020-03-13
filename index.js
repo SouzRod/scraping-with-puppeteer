@@ -7,53 +7,108 @@ const CREDS = {
 }
 
 async function main() {
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-    await page.goto(process.env.PG_LOGIN);
-    await page.type('#username', CREDS.username);
-    await page.type('#password', CREDS.password);
+    const browser = await puppeteer.launch({
+        headless: false
+    })
+    const page = await browser.newPage()
+    await page.setViewport({
+        width: 1300,
+        height: 600,
+        deviceScaleFactor: 1,
+    });
+    await page.goto(process.env.PG_LOGIN)
+    await page.type('#username', CREDS.username)
+    await page.type('#password', CREDS.password)
     await page.click('#loginLabel')
     await page.waitForNavigation()
-    await page.goto(process.env.PG_INDEX);
-    await page.evaluate(async() => {
-        const selectionCategory = document.getElementById('programRequestCategoryId')
-        const optionsCategory = selectionCategory.getElementsByTagName('option')
-        for (var item of optionsCategory) {
-            if (item.value == 14) {
-                item.selected = 'selected'
-            }
-        }
-        const selectionDepartment = document.getElementById('programRequestDepartmentId')
-        const optionsDepartment = selectionDepartment.getElementsByTagName('option')
-        for (var item of optionsDepartment) {
-            if (item.value == 13) {
-                item.selected = 'selected'
-            }
-        }
-        const selectionPeople = document.getElementById('peopleId')
-        const optionsPeople = selectionPeople.getElementsByTagName('option')
-        for (var item of optionsPeople) {
-            if (item.value == 10233) {
-                item.selected = 'selected'
-            }
-        }
-        const selectionStatus = document.getElementById('programRequestStatusId')
-        const optionsStatus = selectionStatus.getElementsByTagName('option')
-        for (var item of optionsStatus) {
-            if (item.value == 3) {
-                item.selected = 'selected'
-            }
-        }
+    await hendlerPage(page)
 
+    const lengthRows = await page.evaluate(() => {
+        return document.querySelectorAll('div.objbox table tbody')[0].getElementsBySelector('tr').length
+    })
+    for (let countRow = 1; countRow < lengthRows; countRow++) {
+        await page.evaluate((data) => {
+            const rows = document.querySelectorAll('div.objbox table tbody')[0].getElementsBySelector('tr')
+            rows[data.countRow].className += ' rowselected'
+            rows[data.countRow].getElementsByTagName('td')[0].click()
+        }, { countRow })
+        const element = await page.$('.rowselected')
+        await element.click({ clickCount: 2 })
+        await page.waitFor(5000)
+        const channelName = await page.$('#programRequestRequestNameRoDiv')
+        const textChannelName = await (await channelName.getProperty('textContent')).jsonValue();
+
+        const obsTextarea = await page.$('#programRequestComments')
+        const textobsTextarea = await (await obsTextarea.getProperty('textContent')).jsonValue();
+        // const elementTbody = await page.$('div.objbox table tbody')
+        const elementXPTO = await page.evaluate(() => {
+                let channelNumber
+                const elementXPTO = document.querySelectorAll('div.objbox table tbody tr')
+                for (const index = 1; index < elementXPTO.length; index++) {
+
+                }
+                console.log(elementXPTO)
+            })
+            // console.log({ textChannelName, textobsTextarea })
+            // await page.evaluate(() => {
+            //     console.log(`url is ${location.href}`)
+            //         // setTimeout(() => {
+            //         //     let textObs = document.getElementById('programRequestCommentsRoDiv').textContent
+            //         //     console.log(document.getElementById('programRequestRequestNumberRoDiv'))
+            //         // }, 15000)
+            // })
+        break
+        await hendlerPage(page)
+    }
+
+    // browser.close()
+}
+
+// async function windowSet(page, name, value) {
+//     return await page.evaluateOnNewDocument(`
+//         Object.defineProperty(window, '${name}', {
+//             get() {
+//                 return '${value}'
+//             }
+//         })
+//     `)
+// }
+
+async function hendlerPage(page) {
+    await page.goto(process.env.PG_INDEX)
+    await page.waitFor(1000)
+    await page.evaluate(async() => {
+        function selectingOptions({
+            idElement,
+            optionValue
+        }) {
+            const selection = document.getElementById(idElement)
+            const options = selection.getElementsByTagName('option')
+            for (let option of options) {
+                if (option.value == optionValue) {
+                    option.selected = 'selected'
+                }
+            }
+        }
+        selectingOptions({
+            idElement: 'programRequestCategoryId',
+            optionValue: 14
+        })
+        selectingOptions({
+            idElement: 'programRequestDepartmentId',
+            optionValue: 13
+        })
+        selectingOptions({
+            idElement: 'peopleId',
+            optionValue: 10233
+        })
+        selectingOptions({
+            idElement: 'programRequestStatusId',
+            optionValue: 3
+        })
     })
     await page.click('#searchButtonTd')
     await page.waitFor(5000)
-    await page.evaluate(async() => {
-            let rows = document.querySelectorAll('div.objbox table tbody')[0].getElementsBySelector('tr')
-            rows[1].getElementsByTagName('td')[0].click()
-            rows[1].className += ' rowselected'
-        })
-        // browser.close()
 }
 
 main()
