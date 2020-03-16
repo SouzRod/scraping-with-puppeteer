@@ -8,7 +8,7 @@ const CREDS = {
 
 async function main() {
     const browser = await puppeteer.launch({
-        headless: false
+        headless: true
     })
     const page = await browser.newPage()
     await page.setViewport({
@@ -26,58 +26,54 @@ async function main() {
     const lengthRows = await page.evaluate(() => {
         return document.querySelectorAll('div.objbox table tbody')[0].getElementsBySelector('tr').length
     })
+    let completedArray = []
     for (let countRow = 1; countRow < lengthRows; countRow++) {
         await page.evaluate((data) => {
             const rows = document.querySelectorAll('div.objbox table tbody')[0].getElementsBySelector('tr')
             rows[data.countRow].className += ' rowselected'
             rows[data.countRow].getElementsByTagName('td')[0].click()
-        }, { countRow })
+        }, {
+            countRow
+        })
         const element = await page.$('.rowselected')
-        await element.click({ clickCount: 2 })
-        await page.waitFor(5000)
+        await element.click({
+            clickCount: 2
+        })
+        await page.waitFor(6000)
         const channelName = await page.$('#programRequestRequestNameRoDiv')
         const textChannelName = await (await channelName.getProperty('textContent')).jsonValue();
 
         const obsTextarea = await page.$('#programRequestComments')
         const textobsTextarea = await (await obsTextarea.getProperty('textContent')).jsonValue();
-        // const elementTbody = await page.$('div.objbox table tbody')
-        const elementXPTO = await page.evaluate(() => {
-                let channelNumber
-                const elementXPTO = document.querySelectorAll('div.objbox table tbody tr')
-                for (const index = 1; index < elementXPTO.length; index++) {
 
-                }
-                console.log(elementXPTO)
-            })
-            // console.log({ textChannelName, textobsTextarea })
-            // await page.evaluate(() => {
-            //     console.log(`url is ${location.href}`)
-            //         // setTimeout(() => {
-            //         //     let textObs = document.getElementById('programRequestCommentsRoDiv').textContent
-            //         //     console.log(document.getElementById('programRequestRequestNumberRoDiv'))
-            //         // }, 15000)
-            // })
-        break
+        const arrayObject = await page.evaluate(() => {
+            let arrayObject = []            
+            const arrayTR = document.querySelectorAll('div.objbox table tbody tr')
+            for (let index = 1; index < arrayTR.length; index++) {
+                let objectTD = {}
+                objectTD.channelNumber = arrayTR[index].querySelectorAll('td')[2].textContent
+                objectTD.channelName = arrayTR[index].querySelectorAll('td')[4].textContent
+                arrayObject.push(objectTD)
+            }
+            return arrayObject
+        })
+        let response = {
+            arrayObject,
+            textChannelName,
+            textobsTextarea
+        }
+        completedArray.push(response)
         await hendlerPage(page)
     }
+    console.log(completedArray)
 
-    // browser.close()
+    browser.close()
 }
-
-// async function windowSet(page, name, value) {
-//     return await page.evaluateOnNewDocument(`
-//         Object.defineProperty(window, '${name}', {
-//             get() {
-//                 return '${value}'
-//             }
-//         })
-//     `)
-// }
 
 async function hendlerPage(page) {
     await page.goto(process.env.PG_INDEX)
     await page.waitFor(1000)
-    await page.evaluate(async() => {
+    await page.evaluate(async () => {
         function selectingOptions({
             idElement,
             optionValue
