@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer')
+const fs = require('fs')
 require('dotenv').config()
 
 const CREDS = {
@@ -65,9 +66,12 @@ async function main() {
         completedArray.push(response)
         await hendlerPage(page)
     }
-    console.log(completedArray)
-
+    console.log(completedArray)    
     browser.close()
+    // fs.writeFile('payload.json', JSON.stringify(completedArray), function (err) {
+    //     if (err) throw err;
+    //     console.log('Saved!');
+    // });
 }
 
 async function hendlerPage(page) {
