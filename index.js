@@ -1,5 +1,6 @@
 const puppeteer = require('puppeteer')
 const fs = require('fs')
+
 require('dotenv').config()
 
 const CREDS = {
@@ -8,6 +9,10 @@ const CREDS = {
 }
 
 async function main() {
+
+    let payload = {
+        channels: []
+    }
     const browser = await puppeteer.launch({
         headless: true
     })
@@ -48,7 +53,7 @@ async function main() {
         const textobsTextarea = await (await obsTextarea.getProperty('textContent')).jsonValue();
 
         const arrayObject = await page.evaluate(() => {
-            let arrayObject = []            
+            let arrayObject = []
             const arrayTR = document.querySelectorAll('div.objbox table tbody tr')
             for (let index = 1; index < arrayTR.length; index++) {
                 let objectTD = {}
@@ -66,12 +71,33 @@ async function main() {
         completedArray.push(response)
         await hendlerPage(page)
     }
-    console.log(completedArray)    
+    console.log(completedArray)
     browser.close()
     // fs.writeFile('payload.json', JSON.stringify(completedArray), function (err) {
     //     if (err) throw err;
     //     console.log('Saved!');
     // });
+
+    completedArray.map(parentObj => {
+        const regex = /([1-9]|0[1-9]|[1,2][0-9]|3[0,1])\/(0[1-9]|1[0,1,2])/g
+        //=-=-=-=-=-=-=-=--=-=-=-=-==-=-=-=-=-=-=-=-=-===-=-=-=-=-=-=-=-=-=-=-=
+        let dataI = parentObj.textobsTextarea.match(regex)[0]
+        let dataT = parentObj.textobsTextarea.match(regex)[1]
+        //=-=-=-=-=-=-=-=--=-=-=-=-==-=-=-=-=-=-=-=-=-===-=-=-=-=-=-=-=-=-=-=-=
+        let dataISplit = dataI.split('/')[0]
+        let dataTSplit = dataT.split('/')[0]
+        //=-=-=-=-=-=-=-=--=-=-=-=-==-=-=-=-=-=-=-=-=-===-=-=-=-=-=-=-=-=-=-=-=
+        let dataIparse = (parseInt(dataISplit) + 1) < 10 ? `0${parseInt(dataISplit) + 1}` : parseInt(dataISplit) + 1
+        let dataTparse = (parseInt(dataTSplit) - 1) < 10 ? `0${parseInt(dataTSplit) - 1}` : parseInt(dataTSplit) - 1
+        //=-=-=-=-=-=-=-=--=-=-=-=-==-=-=-=-=-=-=-=-=-===-=-=-=-=-=-=-=-=-=-=-=
+        let inicio = dataI.replace(dataISplit, dataIparse)
+        let termino = dataT.replace(dataTSplit, dataTparse)
+
+        let dateObj = { inicio, termino }
+        console.log(dateObj)
+        console.log('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+    })
+
 }
 
 async function hendlerPage(page) {
