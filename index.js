@@ -1,6 +1,4 @@
 const puppeteer = require('puppeteer')
-const fs = require('fs')
-
 require('dotenv').config()
 
 const CREDS = {
@@ -11,6 +9,7 @@ const CREDS = {
 async function main() {
 
     let payload = {
+        countChannel: 0,
         channels: []
     }
     const browser = await puppeteer.launch({
@@ -21,7 +20,7 @@ async function main() {
         width: 1300,
         height: 600,
         deviceScaleFactor: 1,
-    });
+    })
     await page.goto(process.env.PG_LOGIN)
     await page.type('#username', CREDS.username)
     await page.type('#password', CREDS.password)
@@ -45,12 +44,12 @@ async function main() {
         await element.click({
             clickCount: 2
         })
-        await page.waitFor(6000)
+        await page.waitFor(7000)
         const channelName = await page.$('#programRequestRequestNameRoDiv')
-        const textChannelName = await (await channelName.getProperty('textContent')).jsonValue();
+        const textChannelName = await (await channelName.getProperty('textContent')).jsonValue()
 
         const obsTextarea = await page.$('#programRequestComments')
-        const textobsTextarea = await (await obsTextarea.getProperty('textContent')).jsonValue();
+        const textobsTextarea = await (await obsTextarea.getProperty('textContent')).jsonValue()
 
         const arrayObject = await page.evaluate(() => {
             let arrayObject = []
@@ -71,13 +70,10 @@ async function main() {
         completedArray.push(response)
         await hendlerPage(page)
     }
-    console.log(completedArray)
     browser.close()
-    // fs.writeFile('payload.json', JSON.stringify(completedArray), function (err) {
-    //     if (err) throw err;
-    //     console.log('Saved!');
-    // });
+    console.log(completedArray)
 
+    let values = []
     completedArray.map(parentObj => {
         const regex = /([1-9]|0[1-9]|[1,2][0-9]|3[0,1])\/(0[1-9]|1[0,1,2])/g
         //=-=-=-=-=-=-=-=--=-=-=-=-==-=-=-=-=-=-=-=-=-===-=-=-=-=-=-=-=-=-=-=-=
@@ -93,11 +89,58 @@ async function main() {
         let inicio = dataI.replace(dataISplit, dataIparse)
         let termino = dataT.replace(dataTSplit, dataTparse)
 
-        let dateObj = { inicio, termino }
-        console.log(dateObj)
-        console.log('=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-')
+        parentObj.arrayObject.map(childObj => {
+            let transferObj = {
+                name: null,
+                sd: null,
+                hd: null,
+                startDate: inicio,
+                endDate: termino
+            }
+            if (parseInt(childObj.channelNumber) >= 300 && parseInt(childObj.channelNumber) < 700) {
+
+                transferObj.name = childObj.channelName.replace('HD', '').trim()
+                transferObj.hd = childObj.channelNumber
+
+                let x = childObj.channelNumber[1] + childObj.channelNumber[2]
+                const rx = new RegExp(`([0-2]${x})`)
+
+                parentObj.arrayObject.map(childObj2 => {
+                    if ((rx.test(childObj2.channelNumber) && childObj2.channelNumber != childObj.channelNumber) || childObj2.channelNumber == x) {
+                        transferObj.sd = childObj2.channelNumber
+                    }
+                })
+            } else if (parseInt(childObj.channelNumber) < 300 || parseInt(childObj.channelNumber) >= 700) {
+
+                transferObj.name = childObj.channelName.trim()
+                transferObj.sd = childObj.channelNumber
+
+                let rx = ''
+                if (childObj.channelNumber.length == 3) {
+                    let x = childObj.channelNumber[1] + childObj.channelNumber[2]
+                    rx = new RegExp(`([3-6]${x}|7${x})`)
+                } else if (childObj.channelNumber.length == 2) {
+                    let x = childObj.channelNumber
+                    rx = new RegExp(`([3-6]${x}|7${x})`)
+                }
+
+                parentObj.arrayObject.map(childObj2 => {
+                    if (rx.test(childObj2.channelNumber) && childObj2.channelNumber != childObj.channelNumber) {
+                        transferObj.hd = childObj2.channelNumber
+                    }
+                })
+            }
+            values.push(transferObj)
+        })
     })
 
+    values.forEach((item) => {
+        var duplicated = payload.channels.findIndex(redItem => item.name == redItem.name) > -1
+        if (!duplicated) payload.channels.push(item)
+    })
+
+    payload.countChannel = payload.channels.length
+    return JSON.stringify(payload)
 }
 
 async function hendlerPage(page) {
